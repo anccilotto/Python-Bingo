@@ -1,88 +1,108 @@
+
+#RM550415 Igor Ribeiro Anccilotto
+#RM551304 Gustavo Arguello Bertacci
+
 import random
 
-# Definir os jogadores
-def get_player_info():
-    num_players = int(input("Quantos jogadores (até 5) deseja adicionar? "))
-    players = []
-    for i in range(num_players):
-        name = input(f"Nome do jogador {i + 1}: ")
-        players.append({"name": name, "cards": []})
-    return players
+# Definição dos jogadores
+def obter_informacoes_jogadores():
+    while True:
+        num_jogadores = int(input("Quantos jogadores (até 5) deseja adicionar? "))
+        if num_jogadores >= 1 and num_jogadores <= 5:
+            break
+        else:
+            print("Número de jogadores deve ser entre 1 e 5.")
+    
+    jogadores = []
+    for i in range(num_jogadores):
+        nome = input(f"Nome do jogador {i + 1}: ")
+        jogadores.append({"nome": nome, "cartelas": []})
+    return jogadores
 
-# Cartelas geradas
-def generate_card():
+# Geração das cartelas
+def gerar_cartela():
     return [random.sample(range(1, 51), 5) for _ in range(5)]
 
-def generate_cards(players):
-    for player in players:
-        player["cards"] = [generate_card() for _ in range(1, 6)]
+def gerar_cartelas(jogadores):
+    for jogador in jogadores:
+        jogador["cartelas"] = [gerar_cartela() for _ in range(1, 6)]
 
-# Exibir as cartelas
-def display_cards(players):
-    for i, player in enumerate(players, start=1):
-        print(f"Cartelas do jogador {i} ({player['name']}):")
-        for card in player['cards']:
-            for row in card:
-                print(" ".join(map(str, row)))
+# Exibição das cartelas
+def exibir_cartelas(jogadores):
+    for i, jogador in enumerate(jogadores, start=1):
+        print(f"Cartelas do jogador {i} ({jogador['nome']}):")
+        for cartela in jogador['cartelas']:
+            for linha in cartela:
+                print(" ".join(map(str, linha)))
             print()
 
 # Sorteio dos números
-def draw_number(used_numbers):
-    number = random.randint(1, 50)
-    while number in used_numbers:
-        number = random.randint(1, 50)
-    used_numbers.add(number)
-    return number
+def sortear_numero(numeros_utilizados):
+    numero = random.randint(1, 50)
+    while numero in numeros_utilizados:
+        numero = random.randint(1, 50)
+    numeros_utilizados.add(numero)
+    return numero
 
-# Verificação do ganhador
-def check_winner(player, drawn_numbers):
-    for card in player['cards']:
+# Verificação do vencedor
+def verificar_vencedor(jogador, numeros_sorteados):
+    for cartela in jogador['cartelas']:
         for i in range(5):
-            if all(number in drawn_numbers for number in card[i]):
+            if all(numero in numeros_sorteados for numero in cartela[i]):
                 return True
-            if all(card[j][i] in drawn_numbers for j in range(5)):
+            if all(cartela[j][i] in numeros_sorteados for j in range(5)):
                 return True
-        if all(card[i][i] in drawn_numbers for i in range(5)) or all(card[i][4 - i] in drawn_numbers for i in range(5)):
+        if all(cartela[i][i] in numeros_sorteados for i in range(5)) or all(cartela[i][4 - i] in numeros_sorteados for i in range(5)):
             return True
     return False
 
-# O controle do ranking 
-def update_ranking(player_name, rankings):
-    for i, (name, wins) in enumerate(rankings):
-        if name == player_name:
-            rankings[i] = (name, wins + 1)
+# Controle do ranking
+def atualizar_ranking(nome_jogador, rankings):
+    for i, (nome, vitorias) in enumerate(rankings):
+        if nome == nome_jogador:
+            rankings[i] = (nome, vitorias + 1)
             return
-    rankings.append((player_name, 1))
+    rankings.append((nome_jogador, 1))
     rankings.sort(key=lambda x: x[1], reverse=True)
 
-def display_ranking(rankings):
+def exibir_ranking(rankings):
     print("Ranking de Jogadores:")
-    for i, (name, wins) in enumerate(rankings, start=1):
-        print(f"{i}. {name} - {wins} vitórias")
+    for i, (nome, vitorias) in enumerate(rankings, start=1):
+        print(f"{i}. {nome} - {vitorias} vitorias")
+
+def salvar_ranking_em_arquivo(rankings):
+    with open("ranking.txt", "w") as arquivo:
+        for nome, vitorias in rankings:
+            arquivo.write(f"{nome} - {vitorias} vitorias\n")
 
 def main():
-    used_numbers = set()
+    numeros_utilizados = set()
     rankings = []
+
     while True:
-        players = get_player_info()
-        generate_cards(players)
-        display_cards(players)
-        drawn_numbers = set()
-        winner = None
-        while not winner:
+        jogadores = obter_informacoes_jogadores()
+        gerar_cartelas(jogadores)
+        exibir_cartelas(jogadores)
+        numeros_sorteados = set()
+        vencedor = None
+        while not vencedor:
             input("Pressione Enter para sortear um número...")
-            number = draw_number(used_numbers)
-            drawn_numbers.add(number)
-            print(f"Número sorteado: {number}")
-            for i, player in enumerate(players):
-                if check_winner(player, drawn_numbers):
-                    winner = player
-                    update_ranking(player["name"], rankings)
+            numero = sortear_numero(numeros_utilizados)
+            numeros_sorteados.add(numero)
+            print(f"Número sorteado: {numero}")
+            for i, jogador in enumerate(jogadores):
+                if verificar_vencedor(jogador, numeros_sorteados):
+                    vencedor = jogador
+                    atualizar_ranking(jogador["nome"], rankings)
                     break
-        print(f"O jogador {winner['name']} venceu!")
-        display_ranking(rankings)
-        play_again = input("Deseja jogar novamente? (s/n): ")
-        if play_again.lower() != 's':
+        print(f"O jogador {vencedor['nome']} venceu!")
+        exibir_ranking(rankings)
+
+        # Salvar ranking em um arquivo
+        salvar_ranking_em_arquivo(rankings)
+
+        jogar_novamente = input("Deseja jogar novamente? (s/n): ")
+        if jogar_novamente.lower() != 's':
             break
 
 if __name__ == "__main__":
